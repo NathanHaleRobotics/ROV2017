@@ -23,6 +23,10 @@ public class StartUI extends Application {
 	public void start(Stage stage) throws Exception {
 		//a stage is the equivalent of a window in JavaFX
 		
+		//set the minimum window size
+		stage.setMinWidth(200);
+		stage.setMinHeight(200);
+		
 		//a generic node that contains other nodes and resizes to fit them
 		Group group = new Group();
 		
@@ -45,6 +49,7 @@ public class StartUI extends Application {
 		//show the window
 		stage.show();
 		
+		//print out all of the input devices JInput found
 		for(Controller controller : ControllerEnvironment.getDefaultEnvironment().getControllers()) {
 			System.out.println(controller.getName() + ":");
 			for(Component component : controller.getComponents()) {
