@@ -27,11 +27,13 @@ import net.java.games.input.ControllerEnvironment;
  */
 public class StartUI extends Application {
 	public void start(Stage stage) throws Exception {
-		
+
 		//in JavaFX, windows are called stages
 		stage.setTitle("ROV Control Center");
 		stage.setWidth(Screen.getPrimary().getBounds().getWidth()/2);
 		stage.setHeight(Screen.getPrimary().getBounds().getHeight()/2);
+		
+		//set some stage properties including the title and window icon
 		stage.getIcons().add(new Image(new FileInputStream("res/icon.jpg"), 140, 140, true, false));
 		stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
 		stage.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
