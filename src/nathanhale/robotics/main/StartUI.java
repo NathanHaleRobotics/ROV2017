@@ -2,12 +2,19 @@ package nathanhale.robotics.main;
 
 import java.io.FileInputStream;
 import javafx.application.Application;
-import javafx.scene.Cursor;
-import javafx.scene.Group;
 import javafx.scene.Scene;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
@@ -19,38 +26,54 @@ import net.java.games.input.ControllerEnvironment;
  *
  */
 public class StartUI extends Application {
-	@Override
 	public void start(Stage stage) throws Exception {
-		//a stage is the equivalent of a window in JavaFX
 		
-		//a generic node that contains other nodes and resizes to fit them
-		Group group = new Group();
-		
-		//base scene class that is contained in a Stage
-		Scene scene = new Scene(group);
-		
-		//set some stage properties including the title and window icon
-		stage.setTitle("ROV Controller");
+		//in JavaFX, windows are called stages
+		stage.setTitle("ROV Control Center");
+		stage.setWidth(Screen.getPrimary().getBounds().getWidth()/2);
+		stage.setHeight(Screen.getPrimary().getBounds().getHeight()/2);
 		stage.getIcons().add(new Image(new FileInputStream("res/icon.jpg"), 140, 140, true, false));
+		stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
+		stage.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+			if(event.getCode() == KeyCode.F11) {
+				stage.setFullScreen(!stage.isFullScreen());
+			}
+		});
+		
+		//create a scrollbar area
+		VBox root = new VBox();
+		Tab infoTab = new Tab("Information");
+		infoTab.setClosable(false);
+		ScrollPane sp = new ScrollPane();
+		infoTab.setContent(sp);
+		Tab controlsTab = new Tab("Controls");
+		controlsTab.setClosable(false);
+		TabPane tabs = new TabPane(infoTab, controlsTab);
+		root.getChildren().add(tabs);
+		
+		//scenes are the topmost container inside a stage, they can be swapped out
+		Scene scene = new Scene(root);
+		scene.setFill(Color.BLUE); //so we can tell when there isn't anything filling the scene
 		stage.setScene(scene);
 		
-		//add some text the the scene
-		Text text = new Text("Hello world");
-		text.setFont(Font.font(100));
-		text.setCursor(Cursor.CROSSHAIR);
-		text.setX(10);
-		text.setY(100);
-		group.getChildren().add(text); //add the text
+		//load all the the JInput controller names and components into a String (unrelated to JavaFX code above)
+		StringBuilder sb = new StringBuilder();
+		for(Controller controller : ControllerEnvironment.getDefaultEnvironment().getControllers()) {
+			sb.append(controller.getName());
+			sb.append(":\n");
+			for(Component component : controller.getComponents()) {
+				sb.append("\t");
+				sb.append(component.getName());
+				sb.append('\n');
+			}
+		}
+		
+		//display the list of controllers inside the scrollpane
+		Text devices = new Text(sb.toString());
+		devices.setFont(Font.font(20));
+		sp.setContent(devices);
 		
 		//show the window
 		stage.show();
-		
-		for(Controller controller : ControllerEnvironment.getDefaultEnvironment().getControllers()) {
-			System.out.println(controller.getName() + ":");
-			for(Component component : controller.getComponents()) {
-				System.out.println(" - " + component.getIdentifier() + ": " + component.getName());
-			}
-			System.out.println();
-		}
 	}
 }
