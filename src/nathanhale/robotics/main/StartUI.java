@@ -16,6 +16,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import jssc.SerialPort;
+import jssc.SerialPortException;
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
@@ -41,18 +43,14 @@ public class StartUI extends Application {
 				stage.setFullScreen(!stage.isFullScreen());
 			}
 		});
-		
+
 		//create a scrollbar area
 		VBox root = new VBox();
-		Tab infoTab = new Tab("Information");
+		Tab infoTab = new Tab("Devices"), controlsTab = new Tab("Controls");
 		infoTab.setClosable(false);
-		ScrollPane sp = new ScrollPane();
-		infoTab.setContent(sp);
-		Tab controlsTab = new Tab("Controls");
 		controlsTab.setClosable(false);
 		TabPane tabs = new TabPane(infoTab, controlsTab);
 		root.getChildren().add(tabs);
-		
 		//scenes are the topmost container inside a stage, they can be swapped out
 		Scene scene = new Scene(root);
 		scene.setFill(Color.BLUE); //so we can tell when there isn't anything filling the scene
@@ -72,10 +70,25 @@ public class StartUI extends Application {
 		
 		//display the list of controllers inside the scrollpane
 		Text devices = new Text(sb.toString());
-		devices.setFont(Font.font(20));
+		devices.setFont(Font.font("consolas", 16));
+		ScrollPane sp = new ScrollPane();
 		sp.setContent(devices);
+		infoTab.setContent(sp);
 		
 		//show the window
 		stage.show();
+	}
+	
+	SerialPort getSerialPort() {
+		for(int i = 1; i <= 10; i++) {
+			try {
+				SerialPort port = new SerialPort("COM" + i);
+				port.openPort();
+				return port;
+			} catch(SerialPortException e) {
+				continue;
+			}
+		}
+		return null;
 	}
 }
