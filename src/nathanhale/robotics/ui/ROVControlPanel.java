@@ -12,14 +12,12 @@ public final class ROVControlPanel extends VBox {
 	private final Tab devices;
 	
 	public ROVControlPanel() {
-		VBox root = new VBox();
 		controls = new Tab("Controls");
 		devices = new Tab("Device List");
 		controls.setClosable(false);
 		devices.setClosable(false);
 		TabPane tabs = new TabPane(controls, devices);
-		root.getChildren().add(tabs);
-		this.getChildren().add(root);
+		this.getChildren().add(tabs);
 	}
 	
 	/** temporary **/
