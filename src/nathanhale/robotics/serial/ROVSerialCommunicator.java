@@ -2,7 +2,7 @@ package nathanhale.robotics.serial;
 
 import com.fazecast.jSerialComm.SerialPort;
 
-public class ROVSerialCommunicator {
+public final class ROVSerialCommunicator {
 	private final SerialPort port;
 	private SerialSender sender;
 	private SerialReceiver receiver;
@@ -10,7 +10,7 @@ public class ROVSerialCommunicator {
 	
 	public ROVSerialCommunicator(SerialPort port) {
 		this.port = port;
-		port.openPort();
+		this.port.openPort();
 	}
 	
 	public Runnable getSender() {
