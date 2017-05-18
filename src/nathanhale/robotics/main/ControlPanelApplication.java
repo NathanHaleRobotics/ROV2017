@@ -10,7 +10,9 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import nathanhale.robotics.serial.SerialCommunicator;
 import nathanhale.robotics.ui.ROVControlPanel;
+import nathanhale.robotics.util.ByteUtil;
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
@@ -63,7 +65,35 @@ public final class ControlPanelApplication extends Application {
 		
 		controlPanel.setDevicesContent(sb.toString());
 		
+		for(SerialPort port : SerialPort.getCommPorts()) {
+			if(port.getDescriptivePortName().contains("rduino")) {
+				communicator = new SerialCommunicator(port, (serial, data) -> {
+					System.out.println("processing message of length " + data.length);
+					System.out.print(new String(data));
+//					if(data.length >= 2) {
+//						short protocol = ByteUtil.getShort(data, 0);
+//						switch(protocol) {
+//						case 20:
+//							serial.stopTransmission();
+//							break;
+//						default:
+//							System.out.println("Received message of protocol " + protocol);
+//						}
+//					}
+				});
+				communicator.startTransmission();
+			}
+		}
+		
+		stage.setOnCloseRequest(event -> {
+			if(communicator != null) {
+				new Thread(() -> communicator.close()).start();
+			}
+		});
+		
 		//show the window
 		stage.show();
 	}
+	
+	volatile SerialCommunicator communicator = null;
 }
