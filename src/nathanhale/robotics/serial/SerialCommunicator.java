@@ -5,22 +5,42 @@ import java.io.Closeable;
 import java.io.IOException;
 
 public final class SerialCommunicator implements Closeable {
+	/** The serial port to communicate over **/
 	private final SerialPort port;
+	
+	/** object passed to constructor that handles data processing logic **/
 	private final MessageProcessor processor;
+	
+	/** seperate threads for sending and receiving data **/
 	private Thread senderThread, receiverThread;
+	
+	/** flags for communicator state **/
 	private volatile boolean running, exit;
 	
+	//message processor interface declaration, has one method that passes the communicator and data received
 	public static interface MessageProcessor {
 		void process(SerialCommunicator serial, byte[] data);
 	}
 	
+	/**
+	 * Create a new SerialCommunicator
+	 * @param port the serial port to use
+	 * @param processor the code to run each time data is received
+	 */
 	public SerialCommunicator(SerialPort port, MessageProcessor processor) {
 		this.port = port;
 		this.processor = processor;
 		this.port.openPort();
 	}
 	
+	/**
+	 * Start communication over the serial port
+	 */
 	public void startTransmission() {
+		if(running)
+			throw new UnsupportedOperationException("SerialCommunicator already running");
+		
+		//start threads with senders and receivers.
 		senderThread = new Thread(new SerialSender(), port.getDescriptivePortName() + " Sender Thread");
 		receiverThread = new Thread(new SerialReceiver(), port.getDescriptivePortName() + " Receiver Thread");
 		senderThread.start();
@@ -52,6 +72,11 @@ public final class SerialCommunicator implements Closeable {
 		}
 	}
 	
+	/**
+	 * Handles data sending, TODO implement this, should use a BlockingQueue to send byte arrays that are available via a send() method
+	 * @author Solomon Ritzow
+	 *
+	 */
 	private final class SerialSender implements Runnable {
 		@Override
 		public void run() {
@@ -65,6 +90,11 @@ public final class SerialCommunicator implements Closeable {
 		}
 	}
 	
+	/**
+	 * Parses received packets of data and passes them to the SerialCommunicator's MessageProcessor
+	 * @author Solomon Ritzow
+	 *
+	 */
 	private final class SerialReceiver implements Runnable {
 		@Override
 		public void run() {

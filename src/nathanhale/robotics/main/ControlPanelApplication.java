@@ -12,7 +12,6 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import nathanhale.robotics.serial.SerialCommunicator;
 import nathanhale.robotics.ui.ROVControlPanel;
-import nathanhale.robotics.util.ByteUtil;
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
@@ -33,6 +32,8 @@ public final class ControlPanelApplication extends Application {
 		//set some stage properties including the title and window icon
 		stage.getIcons().add(new Image(ControlPanelApplication.class.getResourceAsStream("/nathanhale/robotics/resources/icon.png"), 140, 140, true, false));
 		stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
+		
+		//add an event listener when a key is pressed (I used a lambda expression here)
 		stage.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
 			if(event.getCode() == KeyCode.F11) {
 				stage.setFullScreen(!stage.isFullScreen());
@@ -45,7 +46,7 @@ public final class ControlPanelApplication extends Application {
 		scene.setFill(Color.BLUE); //so we can tell when there isn't anything filling the scene
 		stage.setScene(scene);
 		
-		//create a string builder for all of the serial port and input device information
+		//create a string builder (efficient way of extending strings) for all of the serial port and input device information
 		StringBuilder sb = new StringBuilder();
 		
 		//write the list of serial ports to the string builder
@@ -63,10 +64,16 @@ public final class ControlPanelApplication extends Application {
 			}
 		}
 		
+		//call a method in ROVControlPanel that I created that just displays a string in the "Device List" tab
 		controlPanel.setDevicesContent(sb.toString());
 		
+		//iterate over the serial ports
 		for(SerialPort port : SerialPort.getCommPorts()) {
+			
+			//find an arduino
 			if(port.getDescriptivePortName().contains("rduino")) {
+				
+				//create a SerialCommunicator (class Sol created) and give it a MessageProcessor to handle incoming data
 				communicator = new SerialCommunicator(port, (serial, data) -> {
 					System.out.println("processing message of length " + data.length);
 					System.out.print(new String(data));
@@ -81,10 +88,13 @@ public final class ControlPanelApplication extends Application {
 //						}
 //					}
 				});
+				
+				//start communication with the arduino
 				communicator.startTransmission();
 			}
 		}
 		
+		//shut down the serial communicator when the window is closed, on a seperate thread so the window closes immediately
 		stage.setOnCloseRequest(event -> {
 			if(communicator != null) {
 				new Thread(() -> communicator.close()).start();
@@ -95,5 +105,6 @@ public final class ControlPanelApplication extends Application {
 		stage.show();
 	}
 	
+	//holder variable for the communicator, it is volatile so it can be correctly accessed by multiple threads :)
 	volatile SerialCommunicator communicator = null;
 }
