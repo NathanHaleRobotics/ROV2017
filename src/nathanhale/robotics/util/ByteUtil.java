@@ -10,10 +10,10 @@ import java.util.zip.InflaterOutputStream;
 /**
  * Contains various utility methods for reading and writing primitive and non-primitive types from and to byte arrays.
  * @author Solomon Ritzow
- *
  */
 public final class ByteUtil {
 	
+	//a standard character encoding
 	private static final Charset CHARSET = Charset.forName("UTF-8");
 	
 	public static Package getParentPackage(Package child) {
