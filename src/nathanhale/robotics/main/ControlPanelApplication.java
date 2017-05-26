@@ -67,33 +67,6 @@ public final class ControlPanelApplication extends Application {
 		//call a method in ROVControlPanel that I created that just displays a string in the "Device List" tab
 		controlPanel.setDevicesContent(sb.toString());
 		
-		//iterate over the serial ports
-		for(SerialPort port : SerialPort.getCommPorts()) {
-			
-			//find an arduino
-			if(port.getDescriptivePortName().contains("rduino")) {
-				
-				//create a SerialCommunicator (class Sol created) and give it a MessageProcessor to handle incoming data
-				communicator = new SerialCommunicator(port, (serial, data) -> {
-					System.out.println("processing message of length " + data.length);
-					System.out.print(new String(data));
-//					if(data.length >= 2) {
-//						short protocol = ByteUtil.getShort(data, 0);
-//						switch(protocol) {
-//						case 20:
-//							serial.stopTransmission();
-//							break;
-//						default:
-//							System.out.println("Received message of protocol " + protocol);
-//						}
-//					}
-				});
-				
-				//start communication with the arduino
-				communicator.startTransmission();
-			}
-		}
-		
 		//shut down the serial communicator when the window is closed, on a seperate thread so the window closes immediately
 		stage.setOnCloseRequest(event -> {
 			if(communicator != null) {
