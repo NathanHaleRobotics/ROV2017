@@ -34,7 +34,7 @@ public final class SerialCommunicator implements Closeable {
 	 */
 	@FunctionalInterface
 	public static interface MessageProcessor {
-		void process(SerialCommunicator serial, byte[] data);
+		void process(byte[] data);
 	}
 	
 	/**
@@ -42,7 +42,7 @@ public final class SerialCommunicator implements Closeable {
 	 * @param port the serial port to use 
 	 */
 	public SerialCommunicator(SerialPort port) {
-		this(port, (c, d) -> {});
+		this(port, (c) -> {});
 	}
 	
 	/**
@@ -62,17 +62,12 @@ public final class SerialCommunicator implements Closeable {
 	//character encoding to use when sending strings over the serial port
 	private static final Charset utf8 = Charset.forName("UTF8");
 	
-	public void send(String command) {
-		send(command.getBytes(utf8)); //TODO needs a special protocol to distinguish first characters from an actual protocol
-	}
-	
 	public void send(byte[] data) {
+		if(data.length > maxMessageLength)
+			throw new RuntimeException("message too large");
 		try {
-			if(data.length > maxMessageLength)
-				throw new RuntimeException("message too large");
-			sender.writeInt(data.length);
-			sender.write(data);
-		} catch (IOException e) {
+			sendQueue.put(data);
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
@@ -87,10 +82,10 @@ public final class SerialCommunicator implements Closeable {
 			throw new UnsupportedOperationException("Serial port not open");
 		
 		//start threads with senders and receivers.
-		senderThread = new Thread(new SerialSender(), port.getDescriptivePortName() + " Sender Thread");
 		receiverThread = new Thread(new SerialReceiver(), port.getDescriptivePortName() + " Receiver Thread");
-		senderThread.start();
+		senderThread = new Thread(new SerialSender(), port.getDescriptivePortName() + " Sender Thread");
 		receiverThread.start();
+		senderThread.start();
 		running = true;
 	}
 	
@@ -151,23 +146,27 @@ public final class SerialCommunicator implements Closeable {
 	/**
 	 * Parses received packets of data and passes them to the SerialCommunicator's MessageProcessor
 	 * @author Solomon Ritzow
-	 *
 	 */
 	private final class SerialReceiver implements Runnable {
 		@Override
 		public void run() {
 			while(!exit) {
 				try {
-					int length = ((port.getInputStream().read() & 255) << 24) | ((port.getInputStream().read() & 255) << 16) |
-								((port.getInputStream().read() & 255) << 8) | ((port.getInputStream().read() & 255) << 0);
+					int length = //TODO receiving wrong values, or reading them wrong
+						(((byte)port.getInputStream().read() & 255) << 24) |
+						(((byte)port.getInputStream().read() & 255) << 16) |
+						(((byte)port.getInputStream().read() & 255) << 8) | 
+						(((byte)port.getInputStream().read() & 255) << 0);
+					System.out.println("length " + length);
+//					byte[] data = new byte[port.bytesAvailable()];
+//					port.readBytes(data, data.length);
+//					System.out.println(new String(data, "ASCII"));
 					if(length > 0 && length <= 2048) {
 						byte[] data = new byte[length];
-						port.getInputStream().read(data);
-						processor.process(SerialCommunicator.this, data);
-					} else {
-						System.err.println("Invalid message length " + length);
+						port.getInputStream().read(data, 0, length);
+						processor.process(data);
 					}
-				} catch (IOException e) {
+				} catch(IOException e) {
 					e.printStackTrace();
 				}
 			}

@@ -12,18 +12,50 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import nathanhale.robotics.serial.SerialCommunicator;
 import nathanhale.robotics.ui.ROVControlPanel;
+import nathanhale.robotics.util.ByteUtil;
 import net.java.games.input.Component;
 import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
+import net.java.games.input.Component.Identifier;
+import net.java.games.input.Controller.Type;
 
 public final class ControlPanelApplication extends Application {
 	
 	public static void main(String... args) {
 		Application.launch(args);
 	}
+	
+	public static Controller findJoystick() {
+		for(Controller c : ControllerEnvironment.getDefaultEnvironment().getControllers()) {
+			if(c.getType() == Type.STICK) {
+				return c;
+			}
+		}
+		return null;
+	}
 
 	@Override
 	public void start(Stage stage) throws Exception {
+		
+		//start a new thread to handle serial port processing
+		new Thread(() -> {
+			SerialCommunicator communicator = new SerialCommunicator(SerialPort.getCommPorts()[0]);
+			communicator.startTransmission();
+			
+			Controller joystick = findJoystick();
+			byte[] data = new byte[4];
+			while(true) {
+				joystick.poll();
+				ByteUtil.putInteger(data, 0, (int)(joystick.getComponent(Identifier.Axis.X).getPollData() * 1000));
+				communicator.send(data);
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+		
 		//in JavaFX, windows are called stages
 		stage.setTitle("ROV Control Center");
 		stage.setWidth(Screen.getPrimary().getBounds().getWidth()/2);

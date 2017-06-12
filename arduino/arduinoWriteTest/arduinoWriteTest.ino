@@ -1,24 +1,46 @@
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(4800);
 }
 
+//read an integer from the serial port
+long serialReadJavaInteger() {
+  return
+    ((long(Serial.read()) << 24) |
+     ((long(Serial.read()) & 255) << 16) |
+     ((long(Serial.read()) & 255) <<  8) |
+     ((long(Serial.read()) & 255)));
+}
+
+//write an integer to the serial port
+void serialWriteJavaInteger(long value) {
+  Serial.write(byte((((unsigned long)value) >> 24) & 255));
+  Serial.write(byte((((unsigned long)value) >> 16) & 255));
+  Serial.write(byte((((unsigned long)value) >>  8) & 255));
+  Serial.write(byte((((unsigned long)value) >>  0) & 255));
+}
+
+void serialWriteMessageInteger(long value) {
+  serialWriteJavaInteger(4); //write message length
+  serialWriteJavaInteger(value); //write the value
+}
+
+void processReceived(long messageLength) {
+  if (messageLength == 4) { //if the length is 4 then it sent one integer and for debugging im assuming its a joystick value
+    serialWriteMessageInteger(serialReadJavaInteger());
+  }
+}
+
+//flags for received message processing
+boolean isMessage = false;
+long messageLength = 0;
+
 void loop() {
-    if(Serial.available() >= 4) {
-      //get the length of the incoming message because why not
-      //TODO need to convert java integer to arduino long value correctly
-      long length = ((Serial.read() & 255) << 24) | ((Serial.read() & 255) << 16) | ((Serial.read() & 255) << 8) | ((Serial.read() & 255) << 0);
-      //send an acknowledgment response for testing
-      char response[] = "received data\n";
-      long responseSize = sizeof(response);
-      Serial.write(byte(responseSize >> 24));
-      Serial.write(byte(responseSize >> 16));
-      Serial.write(byte(responseSize >> 8));
-      Serial.write(byte(responseSize >> 0));
-      Serial.write(response);
-      //ignore message contents
-      for(int i = 0; i < length; i++) {
-        Serial.read();
-      }
-    }
+  if (isMessage && Serial.available() >= messageLength) {
+    processReceived(messageLength);
+    isMessage = false; //message was processed, reset for next
+  } else if (!isMessage && Serial.available() >= 4) { //if there wasn't a message length received yet but there are 4 bytes...
+    isMessage = true;
+    messageLength = serialReadJavaInteger(); //read the length of the received message
+  }
 }
 
